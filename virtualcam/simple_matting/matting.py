@@ -1,4 +1,5 @@
 from enum import Enum
+from virtualcam.matting import AlphaMatte
 
 __author__ = 'Marek'
 
@@ -27,7 +28,7 @@ class ImageAligner:
             self.termination_eps)
 
     def calculate_warp_matrix(self):
-        if not self.warp_matrix_calculated:
+        if self.warp_matrix_calculated:
             return self.warp_matrix
 
         (cc, self.warp_matrix) = cv2.findTransformECC(
@@ -50,7 +51,7 @@ class ImageAligner:
             flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP)
 
 
-class AlphaMatte:
+class SimpleAlphaMatte (AlphaMatte):
     def __init__(self, image, control_image, input_trimap=None, image_aligner=None):
         self.input_trimap = input_trimap
         self.control_image = control_image
@@ -60,22 +61,8 @@ class AlphaMatte:
 
         self.image_aligner = image_aligner if not image_aligner else ImageAligner(image, control_image)
 
-    def get_background(self):
-        pass
-
-    def get_foreground(self):
-        pass
-
-    def get_trimap(self):
+    def get_alpha(self):
         image_converted = cv2.cvtColor(self.image, cv2.COLOR_BGR2HSV)
         control_image_converted = cv2.cvtColor(self.control_image, cv2.COLOR_BGR2HSV)
         result = cv2.absdiff(image_converted, control_image_converted)
         return cv2.cvtColor(result, cv2.COLOR_HSV2BGR)
-
-    def _get_trimap(self):
-        if self.trimap:
-            return self.trimap
-        aligned_image = self.image_aligner.get_first_image()
-        aligned_control_image = self.image_aligner.get_second_image()
-
-        image_diff = aligned_image - aligned_control_image
